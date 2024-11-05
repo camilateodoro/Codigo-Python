@@ -60,6 +60,7 @@ def salvar_dados(y_vals, timestamps, folder_path):
             for timestamp, value in zip(standardized_timestamps, y_vals):
                 writer.writerow([timestamp, value])
         status_label.setText("Dados salvos: SIM")
+        print(f"Excel salvo: {csv_file_name}")
     except Exception as e:
         print(f"Erro ao salvar os dados: {str(e)}")
         status_label.setText("Dados salvos: NÃO")
@@ -87,32 +88,39 @@ def calcular_transformada_de_fourier(y_vals, timestamps):
 
     return positive_freqs, positive_magnitudes
 
-
-# Função para calcular a DFT manualmente
-def calcular_dft_manual(y_vals):
-    N = len(y_vals)
-    dft_vals = []
-    for k in range(N):
-        real_sum = 0
-        imag_sum = 0
-        for n in range(N):
-            angle = 2 * np.pi * k * n / N
-            real_sum += y_vals[n] * np.cos(angle)
-            imag_sum += y_vals[n] * np.sin(angle)
-        magnitude = np.sqrt(real_sum**2 + imag_sum**2)
-        dft_vals.append(magnitude)
-    return np.arange(N), np.array(dft_vals)
-
-
-# Função para calcular a velocidade a partir das frequências
+# Função para calcular todas as velocidades a partir das frequências
 def calcular_velocidade(positive_freqs):
-    f0 = 24000000000  # Frequência do radar em Hz (24 GHz)
-    c = 300000000  # Velocidade da luz em m/s
-    deltaf = np.max(positive_freqs)  # Pode ajustar para pegar o delta f desejado
+    f0 = 24e9  # Frequência do radar em Hz (24 GHz)
+    c = 3e8  # Velocidade da luz em m/s
+    deltaf = positive_freqs
     V = (deltaf / (2 * f0)) * c
     return V
 
-# Função para salvar os gráficos (incluindo a FFT, DFT manual e Velocidade)
+# Função para calcular a velocidade maxima a partir das frequências
+def calcular_velocidademaxima(positive_freqs):
+    f0 = 24e9  # Frequência do radar em Hz (24 GHz)
+    c = 3e8  # Velocidade da luz em m/s
+    freqmax = np.max(positive_freqs)
+    Vmax = (freqmax / (2 * f0)) * c
+    return Vmax
+
+# Função para calcular a velocidade minima a partir das frequências
+def calcular_velocidademinima(positive_freqs):
+    f0 = 24e9  # Frequência do radar em Hz (24 GHz)
+    c = 3e8  # Velocidade da luz em m/s
+    freqmin = np.min(positive_freqs)
+    Vmin = (freqmin / (2 * f0)) * c
+    return Vmin
+
+# Função para calcular a velocidade média a partir das frequências
+def calcular_velocidademedia(positive_freqs):
+    f0 = 24e9  # Frequência do radar em Hz (24 GHz)
+    c = 3e8  # Velocidade da luz em m/s
+    freqmed = np.mean(positive_freqs)
+    Vmed = (freqmed / (2 * f0)) * c
+    return Vmed
+
+# Função para salvar os gráficos
 def salvar_forma_de_onda_e_pseudocolor(y_vals, timestamps, folder_path, graph_name):
     y_vals = np.array(y_vals)
     timestamps = np.array(timestamps)
@@ -130,60 +138,125 @@ def salvar_forma_de_onda_e_pseudocolor(y_vals, timestamps, folder_path, graph_na
     graph_file_path = os.path.join(folder_path, graph_file_name)
 
     try:
-        plt.figure(figsize=(12, 25))
+        plt.figure(figsize=(12, 40))
 
         # Primeiro gráfico: Forma de onda
-        plt.subplot(5, 1, 1)
+        plt.subplot(6, 1, 1)
         plt.plot(standardized_timestamps, y_vals, color='red')
         plt.xlabel('Tempo [s]')
-        plt.ylabel('Resposta do Conversor Analógico-Digital')
+        plt.ylabel('Resposta do Conversor Analógico-Digital- Tensão (V)')
         plt.xlim([0, standardized_timestamps[-1]])  # Define o intervalo de tempo
         plt.ylim([0, 1000])
-        plt.title('Forma de Onda')
+        plt.title('Forma de Onda [V(t)]')
 
-        # Segundo gráfico: Espectrograma
-        plt.subplot(5, 1, 2)
-        Fs = len(y_vals) / (timestamps[-1] - timestamps[0])  # Calculating sampling frequency
-        Pxx, freqs, bins, im = plt.specgram(y_vals, NFFT=256, Fs=Fs, noverlap=128, window=np.hanning(256))
-        Pxx = medfilt2d(Pxx, kernel_size=3)
-        Pxx = 10 * np.log10(Pxx + 1e-8)
-        plt.imshow(Pxx, aspect='auto', origin='lower',
-                   extent=[0, standardized_timestamps[-1], freqs.min(), freqs.max()], cmap='inferno')
-        plt.colorbar(label='Intensidade [dB]')
-        plt.xlabel('Tempo [s]')
-        plt.ylabel('Frequência [Hz]')
-        plt.title('Pseudocolor')
-
-        # Terceiro gráfico: Transformada de Fourier (FFT)
-        plt.subplot(5, 1, 3)
+        # Segundo gráfico: Transformada de Fourier (FFT)
+        plt.subplot(6, 1, 2)
         positive_freqs, positive_magnitudes = calcular_transformada_de_fourier(y_vals, timestamps)
         plt.plot(positive_freqs, positive_magnitudes, color='blue')
         plt.xlabel('Frequência [Hz]')
-        plt.ylabel('Magnitude')
-        plt.title('Transformada de Fourier (FFT): Tensão vs Frequência')
+        plt.ylabel('Magnitude - Tensão (V)')
+        plt.title('Transformada Rápida de Fourier (FFT): Tensão vs Frequência [V(f)]')
         plt.grid(True)
         plt.xlim([0, positive_freqs[-1]])  # Limitar o eixo x à faixa positiva
-        plt.ylim([0, 10000])  # Definindo o limite do eixo Y de 0 a 10000
+        plt.ylim([0, 300])  # Definindo o limite do eixo Y de 0 a 10000
 
-        # Quarto gráfico: Transformada Discreta de Fourier (DFT) Manual
-        plt.subplot(5, 1, 4)
-        dft_freqs, dft_magnitudes = calcular_dft_manual(y_vals)
-        plt.plot(dft_freqs, dft_magnitudes, color='green')
-        plt.xlabel('Índice de Frequência')
-        plt.ylabel('Magnitude')
-        plt.title('Transformada Discreta de Fourier (DFT) Manual')
+        # Terceiro gráfico: Velocidade em m/s a partir da FFT - Tensão X Velocidade
+        plt.subplot(6, 1, 3)
+        V = calcular_velocidade(positive_freqs)  # Calcula a velocidade com as frequências
+        y_vals_truncated = y_vals[:len(V)]  # Trunca y_vals para o mesmo tamanho de V
+        plt.plot(V, y_vals_truncated, color='purple')  # Usa y_vals_truncated como eixo X e V como eixo Y
+        plt.xlabel('Velocidade (m/s)')
+        plt.ylabel('Tensão (V)')
+        plt.title('Tensão vs Velocidade')
         plt.grid(True)
-        plt.xlim([0, len(dft_freqs) // 2])  # Limitar o eixo x à metade dos pontos (faixa positiva)
-        plt.ylim([0, 10000])  # Definindo o limite do eixo Y de 0 a 10000
 
-        # Quinto gráfico: Velocidade em m/s a partir da FFT
-        plt.subplot(5, 1, 5)
-        V = calcular_velocidade(positive_freqs)
-        plt.bar(['Velocidade'], [V], color='orange')
+        # Quarto gráfico: Velocidades Máxima, Mínima e Média em m/s a partir da FFT
+        plt.subplot(6, 1, 4)
+        Vmax = calcular_velocidademaxima(positive_freqs)
+        Vmin = calcular_velocidademinima(positive_freqs)
+        Vmed = calcular_velocidademedia(positive_freqs)
+        V= calcular_velocidade(positive_freqs)
+        plt.plot([0, max(positive_freqs)], [Vmax, Vmax], color='orange', linestyle='-', label='Velocidade Máxima')
+        plt.plot([0, max(positive_freqs)], [Vmin, Vmin], color='blue', linestyle='-', label='Velocidade Mínima')
+        plt.plot([0, max(positive_freqs)], [Vmed, Vmed], color='red', linestyle='-', label='Velocidade Média')
+        plt.plot(positive_freqs, V, color='green')
         plt.ylabel('Velocidade [m/s]')
-        plt.title('Velocidade em m/s a partir da Transformada de Fourier (FFT)')
-        plt.ylim([0, V * 1.5])
+        plt.title('Velocidades em m/s a partir da Transformada Rápida de Fourier (FFT)')
+        plt.grid(True)
 
+        #Velocidades - TESTE
+        plt.subplot(6, 1, 6)
+        V = calcular_velocidade(positive_freqs)  # Calcula a velocidade com as frequências
+        positive_freqs_truncated = positive_freqs[:len(V)]  # Trunca y_vals para o mesmo tamanho de V
+        plt.plot(positive_freqs_truncated, V, color='purple')  # Usa y_vals_truncated como eixo X e V como eixo Y
+        plt.xlabel('Frequencia (Hz)')
+        plt.ylabel('Velocidade (m/s)')
+        plt.title('Velocidade vs Frequencia')
+        plt.grid(True)
+
+        # Desenvolvimento completo do cálculo da velocidade
+        plt.subplot(6, 1, 4)
+        f0 = 24e9  # Frequência do radar em Hz (24 GHz)
+        c = 3e8  # Velocidade da luz em m/s
+        freqmax = np.max(positive_freqs)  # Diferença de frequência máxima
+        Vmax = (freqmax / (2 * f0)) * c  # Fórmula da velocidade
+        freqmin = np.min(positive_freqs)  # Diferença de frequência máxima
+        Vmin = (freqmin / (2 * f0)) * c  # Fórmula da velocidade
+        freqmed = np.mean(positive_freqs)  # Diferença de frequência máxima
+        Vmed = (freqmed / (2 * f0)) * c  # Fórmula da velocidade
+        deltaf = positive_freqs  # Diferença de frequência máxima
+        V = (deltaf / (2 * f0)) * c  # Fórmula da velocidade
+
+        # Exibindo a fórmula da velocidade
+        formula_velocidade = (
+            r"$V = \frac{\Delta f}{2 f_0} \cdot c$" "\n"
+            f"Com: \n"
+            f"Frequência central (f_0): {f0 / 1e9 :.2f} GHz\n"
+            f"Velocidade da luz (c): {c:.2e} m/s\n"
+            f"Δfmax (Diferença de frequência): {freqmax:.2f} Hz\n"
+            f"Resultado: Vmax = {Vmax:.4f} m/s\n"
+            f"Δfmin (Diferença de frequência): {freqmin:.2f} Hz\n"
+            f"Resultado: Vmin = {Vmin:.4f} m/s\n"
+            f"Δfmed (Diferença de frequência): {freqmed:.2f} Hz\n"
+            f"Resultado: Vmed = {Vmed:.4f} m/s"
+        )
+        plt.text(0.5, 0.5, formula_velocidade, fontsize=12, verticalalignment='center',
+                 horizontalalignment='center', transform=plt.gca().transAxes, bbox=dict(facecolor='white', alpha=0.8))
+
+        # Fórmula matemática da Transformada de Fourier e valores utilizados
+        plt.subplot(6, 1, 5)
+        N = len(y_vals)
+        T = standardized_timestamps[1] - standardized_timestamps[0]  # Intervalo de tempo
+        yf = np.fft.fft(y_vals)
+        xf = np.fft.fftfreq(N, T)[:N // 2]
+
+        # Exibindo a fórmula matemática da Transformada de Fourier com LaTeX
+        formula = (r"$X(f) = \int_{-\infty}^{\infty} x(t) e^{-j2\pi ft} dt$" "\n"
+                   r"Calculado via FFT: $X_k = \sum_{n=0}^{N-1} x_n e^{-j \frac{2\pi}{N} kn}$")
+
+        # Exibindo os valores utilizados para o cálculo
+        valores_utilizados = (f"N (Número de amostras): {N}\n"
+                              f"T (Intervalo de amostragem): {T:.4e} s\n"
+                              f"Frequência de amostragem: {1 / T:.2f} Hz")
+
+        # Adicionando a fórmula e os valores ao gráfico
+        plt.text(0.2, 0.5, formula + "\n\n" + valores_utilizados, fontsize=12, verticalalignment='center',
+                 horizontalalignment='center', transform=plt.gca().transAxes, bbox=dict(facecolor='white', alpha=0.8))
+
+        # Desenvolvimento completo do cálculo de FFT
+        plt.subplot(6, 1, 5)
+        desenvolvimentos = []
+        for k in range(N // 2):  # Para cada frequência
+            soma_complexa = np.sum(y_vals * np.exp(-2j * np.pi * k * np.arange(N) / N))
+            desenvolvimentos.append(f"X[{k}] = Σ x[n] * e^(-j 2π {k} n / {N}) = {soma_complexa:.4f}")
+
+        # Exibindo o desenvolvimento completo em texto no gráfico
+        desenvolvimentos_texto = "\n".join(desenvolvimentos[:10])  # Exibir só os 10 primeiros valores
+        plt.text(0.6, 0.5, desenvolvimentos_texto, fontsize=10, verticalalignment='center',
+                 horizontalalignment='center', transform=plt.gca().transAxes, bbox=dict(facecolor='white', alpha=0.8))
+        plt.title("Desenvolvimento Completo do Cálculo da FFT (10 primeiros valores)")
+
+        #Salvar gráfico
         plt.tight_layout()
         plt.savefig(graph_file_path)
         plt.close()
@@ -191,10 +264,8 @@ def salvar_forma_de_onda_e_pseudocolor(y_vals, timestamps, folder_path, graph_na
     except Exception as e:
         print(f"Erro ao salvar o gráfico: {str(e)}")
 
-
 def update_plot():
     curve.setData(list(range(len(y_vals))), y_vals)
-
 
 def read_data():
     try:
@@ -213,7 +284,6 @@ def read_data():
     except KeyboardInterrupt:
         print("Leitura de dados interrompida")
 
-
 def keyReleaseEvent(event):
     global space_pressed
     if event.key() == Qt.Key_Space:
@@ -221,11 +291,11 @@ def keyReleaseEvent(event):
         print("Botão de espaço liberado")
         if y_vals:
             # Salvando os dados e gráficos
+            salvar_dados(list(y_vals), list (timestamps),r"C:\Users\Camila\Desktop\Nova pasta" )
             salvar_forma_de_onda_e_pseudocolor(list(y_vals), list(timestamps), r"C:\Users\Camila\Desktop\Nova pasta",
                                                "Movimento")
         else:
             print("Nenhum dado disponível para salvar")
-
 
 window.keyReleaseEvent = keyReleaseEvent
 
