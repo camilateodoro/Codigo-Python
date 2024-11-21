@@ -170,22 +170,8 @@ def salvar_forma_de_onda(y_vals, timestamps, folder_path, graph_name):
         plt.title('Tensão vs Velocidade')
         plt.grid(True)
 
-        # Quarto gráfico: Velocidades Máxima, Mínima e Média em m/s a partir da FFT
+        #Quarto gráfico: Velocidade vs Frequencia
         plt.subplot(6, 1, 4)
-        Vmax = calcular_velocidademaxima(positive_freqs)
-        Vmin = calcular_velocidademinima(positive_freqs)
-        Vmed = calcular_velocidademedia(positive_freqs)
-        V= calcular_velocidade(positive_freqs)
-        plt.plot([0, max(positive_freqs)], [Vmax, Vmax], color='orange', linestyle='-', label='Velocidade Máxima')
-        plt.plot([0, max(positive_freqs)], [Vmin, Vmin], color='blue', linestyle='-', label='Velocidade Mínima')
-        plt.plot([0, max(positive_freqs)], [Vmed, Vmed], color='red', linestyle='-', label='Velocidade Média')
-        plt.plot(positive_freqs, V, color='green')
-        plt.ylabel('Velocidade [m/s]')
-        plt.title('Velocidades em m/s a partir da Transformada Rápida de Fourier (FFT)')
-        plt.grid(True)
-
-        #Velocidades - TESTE
-        plt.subplot(6, 1, 6)
         V = calcular_velocidade(positive_freqs)  # Calcula a velocidade com as frequências
         positive_freqs_truncated = positive_freqs[:len(V)]  # Trunca y_vals para o mesmo tamanho de V
         plt.plot(positive_freqs_truncated, V, color='purple')  # Usa y_vals_truncated como eixo X e V como eixo Y
@@ -195,7 +181,7 @@ def salvar_forma_de_onda(y_vals, timestamps, folder_path, graph_name):
         plt.grid(True)
 
         # Desenvolvimento completo do cálculo da velocidade
-        plt.subplot(6, 1, 4)
+        plt.subplot(6, 1, 5)
         f0 = 24e9  # Frequência do radar em Hz (24 GHz)
         c = 3e8  # Velocidade da luz em m/s
         freqmax = np.max(positive_freqs)  # Diferença de frequência máxima
@@ -224,7 +210,7 @@ def salvar_forma_de_onda(y_vals, timestamps, folder_path, graph_name):
                  horizontalalignment='center', transform=plt.gca().transAxes, bbox=dict(facecolor='white', alpha=0.8))
 
         # Fórmula matemática da Transformada de Fourier e valores utilizados
-        plt.subplot(6, 1, 5)
+        plt.subplot(6, 1, 6)
         N = len(y_vals)
         T = standardized_timestamps[1] - standardized_timestamps[0]  # Intervalo de tempo
         yf = np.fft.fft(y_vals)
@@ -244,7 +230,7 @@ def salvar_forma_de_onda(y_vals, timestamps, folder_path, graph_name):
                  horizontalalignment='center', transform=plt.gca().transAxes, bbox=dict(facecolor='white', alpha=0.8))
 
         # Desenvolvimento completo do cálculo de FFT
-        plt.subplot(6, 1, 5)
+        plt.subplot(6, 1, 6)
         desenvolvimentos = []
         for k in range(N // 2):  # Para cada frequência
             soma_complexa = np.sum(y_vals * np.exp(-2j * np.pi * k * np.arange(N) / N))
