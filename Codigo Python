@@ -39,7 +39,7 @@ plot_widget.setYRange(0, 1023)
 space_pressed = False
 
 # Função para salvar os dados em planilha
-def salvar_dados(y_vals, timestamps, folder_path):
+def salvar_dados(y_vals, timestamps, positive_freqs, V, folder_path):
     existing_files = [name for name in os.listdir(folder_path) if name.endswith(".csv")]
     if existing_files:
         existing_numbers = [int(name.split("_")[1].split(".")[0]) for name in existing_files if
@@ -53,42 +53,26 @@ def salvar_dados(y_vals, timestamps, folder_path):
 
     csv_file_name = f"dados_{new_number:04d}.csv"
     csv_file_path = os.path.join(folder_path, csv_file_name)
-    try:
-        with open(csv_file_path, 'w', newline='') as file:
-            writer = csv.writer(file)
-            writer.writerow(['Tempo', 'Tensão'])
-            for timestamp, value in zip(standardized_timestamps, y_vals):
-                writer.writerow([timestamp, value])
-        status_label.setText("Dados salvos: SIM")
-        print(f"Excel salvo: {csv_file_name}")
-    except Exception as e:
-        print(f"Erro ao salvar os dados: {str(e)}")
-        status_label.setText("Dados salvos: NÃO")
 
-# Função para salvar frequências e velocidades em uma planilha
-def salvar_frequencias_e_velocidades(positive_freqs, V, folder_path):
-    # Encontrar o próximo número para nome do arquivo
-    existing_files = [name for name in os.listdir(folder_path) if name.startswith("frequencias_velocidades") and name.endswith(".csv")]
-    if existing_files:
-        existing_numbers = [int(name.split("_")[-1].split(".")[0]) for name in existing_files if name.split("_")[-1].split(".")[0].isdigit()]
-        new_number = max(existing_numbers) + 1 if existing_numbers else 1
-    else:
-        new_number = 1
-
-    # Definir o nome do arquivo
-    csv_file_name = f"frequencias_velocidades_{new_number:04d}.csv"
-    csv_file_path = os.path.join(folder_path, csv_file_name)
+    # Ajuste do comprimento dos dados para alinhar as colunas
+    max_length = max(len(y_vals), len(positive_freqs))
+    y_vals.extend([None] * (max_length - len(y_vals)))           # Preencher com None se y_vals for menor
+    timestamps.extend([None] * (max_length - len(timestamps)))   # Preencher com None se timestamps for menor
+    positive_freqs.extend([None] * (max_length - len(positive_freqs)))  # Preencher com None se positive_freqs for menor
+    V.extend([None] * (max_length - len(V)))                    # Preencher com None se V for menor
 
     # Salvar os dados no arquivo CSV
     try:
         with open(csv_file_path, 'w', newline='') as file:
             writer = csv.writer(file)
-            writer.writerow(['Frequência [Hz]', 'Velocidade [m/s]'])
-            for freq, vel in zip(positive_freqs, V):
-                writer.writerow([freq, vel])
-        print(f"Dados de frequências e velocidades salvos com sucesso em {csv_file_path}")
+            # Cabeçalhos das colunas
+            writer.writerow(['Tempo [s]', 'Tensão [V]', 'Frequência [Hz]', 'Velocidade [m/s]'])
+            # Gravar os dados em cada linha
+            for timestamp, value, freq, vel in zip(timestamps, y_vals, positive_freqs, V):
+                writer.writerow([timestamp, value, freq, vel])
+        print(f"Dados completos salvos com sucesso em {csv_file_path}")
     except Exception as e:
-        print(f"Erro ao salvar os dados de frequências e velocidades: {str(e)}")
+        print(f"Erro ao salvar os dados completos: {str(e)}")
 
 # Função para calcular a Transformada de Fourier
 def calcular_transformada_de_fourier(y_vals, timestamps):
@@ -303,10 +287,9 @@ def keyReleaseEvent(event):
             positive_freqs, _ = calcular_transformada_de_fourier(y_vals, timestamps)
             V = calcular_velocidade(positive_freqs)
             # Salvando os dados e gráficos
-            salvar_dados(list(y_vals), list (timestamps),r"C:\Users\Camila\Desktop\Nova pasta" )
+            salvar_dados(list(y_vals), list (timestamps), list(positive_freqs), list(V), r"C:\Users\Camila\Desktop\Nova pasta")
             salvar_forma_de_onda(list(y_vals), list(timestamps), r"C:\Users\Camila\Desktop\Nova pasta",
                                                "Movimento")
-            salvar_frequencias_e_velocidades(list(positive_freqs), list(V), r"C:\Users\Camila\Desktop\Nova pasta")
         else:
             print("Nenhum dado disponível para salvar")
 
