@@ -56,10 +56,10 @@ def salvar_dados(y_vals, timestamps, positive_freqs, V, folder_path):
 
     # Ajuste do comprimento dos dados para alinhar as colunas
     max_length = max(len(y_vals), len(positive_freqs))
-    y_vals.extend([None] * (max_length - len(y_vals)))           # Preencher com None se y_vals for menor
-    timestamps.extend([None] * (max_length - len(timestamps)))   # Preencher com None se timestamps for menor
-    positive_freqs.extend([None] * (max_length - len(positive_freqs)))  # Preencher com None se positive_freqs for menor
-    V.extend([None] * (max_length - len(V)))                    # Preencher com None se V for menor
+    y_vals.extend([None] * (max_length - len(y_vals)))           
+    timestamps.extend([None] * (max_length - len(timestamps)))   
+    positive_freqs.extend([None] * (max_length - len(positive_freqs))) 
+    V.extend([None] * (max_length - len(V)))                    
 
     # Salvar os dados no arquivo CSV
     try:
@@ -194,9 +194,9 @@ def salvar_forma_de_onda(y_vals, timestamps, folder_path, graph_name):
         c = 3e8  # Velocidade da luz em m/s
         freqmax = np.max(positive_freqs)  # Diferença de frequência máxima
         Vmax = (freqmax / (2 * f0)) * c  # Fórmula da velocidade
-        freqmin = np.min(positive_freqs)  # Diferença de frequência máxima
+        freqmin = np.min(positive_freqs)  # Diferença de frequência mínima
         Vmin = (freqmin / (2 * f0)) * c  # Fórmula da velocidade
-        freqmed = np.mean(positive_freqs)  # Diferença de frequência máxima
+        freqmed = np.mean(positive_freqs)  # Diferença de frequência média
         Vmed = (freqmed / (2 * f0)) * c  # Fórmula da velocidade
         deltaf = positive_freqs  # Diferença de frequência máxima
         V = (deltaf / (2 * f0)) * c  # Fórmula da velocidade
