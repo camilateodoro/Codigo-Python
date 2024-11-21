@@ -198,7 +198,7 @@ def salvar_forma_de_onda(y_vals, timestamps, folder_path, graph_name):
         Vmin = (freqmin / (2 * f0)) * c  # Fórmula da velocidade
         freqmed = np.mean(positive_freqs)  # Diferença de frequência média
         Vmed = (freqmed / (2 * f0)) * c  # Fórmula da velocidade
-        deltaf = positive_freqs  # Diferença de frequência máxima
+        deltaf = positive_freqs  # Diferença de frequências
         V = (deltaf / (2 * f0)) * c  # Fórmula da velocidade
 
         # Exibindo a fórmula da velocidade
